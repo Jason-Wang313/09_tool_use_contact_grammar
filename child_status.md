@@ -1,6 +1,6 @@
 # Child Status: 09_tool_use_contact_grammar
 
-Stage: final audit updated; final commit/push pending
+Stage: complete
 
 Current facts:
 - `plan.md` was written first.
@@ -16,8 +16,9 @@ Current facts:
 - Visible Desktop PDF exists: `C:/Users/wangz/OneDrive/Desktop/09.pdf` (151,194 bytes).
 - Public GitHub repo created and pushed:
   - `https://github.com/Jason-Wang313/09_tool_use_contact_grammar`
-- `data/github_status.json` created.
-- `docs/final_audit.md` updated with the GitHub URL and Desktop-copy status.
+- `data/github_status.json` records the public URL and push status.
+- `docs/final_audit.md` answers all required audit questions.
+- Latest pushed commit before this status correction: `666a01c Record final audit and publish status`.
 
 Recent commands:
 - `pdflatex -interaction=nonstopmode -halt-on-error main.tex`
@@ -26,12 +27,12 @@ Recent commands:
 - `pdflatex -interaction=nonstopmode -halt-on-error main.tex`
 - Log scan for undefined citations/references and LaTeX errors
 - `Copy-Item paper/main.pdf C:/Users/wangz/Downloads/09.pdf`
-- `git add .`
 - `git commit -m "Initial contact grammar paper artifact"`
-- `gh repo view Jason-Wang313/09_tool_use_contact_grammar`
 - `gh repo create 09_tool_use_contact_grammar --public --source=. --remote=origin --push`
 - `python scripts/write_research_artifacts.py`
-- Desktop PDF existence check
+- `git commit -m "Record final audit and publish status"`
+- `git push`
+- Final checks for `git status --short`, remote URL, GitHub repo visibility, and PDF paths
 
 Failures and recovery:
 - First Python syntax check failed on an f-string/LaTeX brace conflict in `scripts/write_research_artifacts.py`; patched and passed.
@@ -39,5 +40,4 @@ Failures and recovery:
 - `gh repo view` returned not found before creation; recovered by creating the public repo and pushing successfully.
 
 Next steps:
-- Commit and push final audit/status bookkeeping changes.
-- Run final repository/PDF checks.
+- None for this child run.
