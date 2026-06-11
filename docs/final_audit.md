@@ -11,5 +11,5 @@
 9. **Biggest weaknesses:** Toy finite world; hand-written rules; no real robot; no learned contact perception; continuous contact stability and deformation are coarse symbolic gates.
 10. **Paper-readiness judgment:** Workshop or revise. The mechanism is sharp and runnable, but a main-conference submission needs real-robot or high-fidelity physics evidence.
 11. **Exact Downloads PDF path:** `C:/Users/wangz/Downloads/09.pdf`
-12. **GitHub URL:** pending GitHub push
-13. **Desktop copy status:** pending orchestrator copy
+12. **GitHub URL:** https://github.com/Jason-Wang313/09_tool_use_contact_grammar
+13. **Desktop copy status:** visible Desktop PDF exists at C:/Users/wangz/OneDrive/Desktop/09.pdf
