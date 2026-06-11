@@ -1,0 +1,16 @@
+literature collection started
+FETCH cs_ro_latest start=0 count=250
+FETCH cs_ro_latest start=250 count=250
+FETCH cs_ro_latest start=500 count=250
+FETCH cs_ro_latest start=750 count=250
+FETCH cs_ro_latest start=1000 count=100
+FETCH robot_manipulation start=0 count=250
+FETCH robot_manipulation start=250 count=50
+FETCH tool_use start=0 count=220
+FETCH contact_rich start=0 count=220
+FETCH affordance_manipulation start=0 count=220
+NO_MORE affordance_manipulation start=0
+FETCH task_motion_planning start=0 count=220
+FETCH tactile_contact start=0 count=180
+FETCH foundation_robot_models start=0 count=180
+SUMMARY {"deep_read": 240, "hostile_prior": 100, "output": "C:\\Users\\wangz\\robotics_60_paper_batch\\09_tool_use_contact_grammar\\docs\\related_work_matrix.csv", "serious_skim": 300, "total_unique": 1733}

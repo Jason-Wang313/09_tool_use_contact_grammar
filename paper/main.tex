@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage{iclr2026_conference,times}
+\input{math_commands.tex}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsthm}
+
+\title{Tool Use Contact Grammar}
+
+\author{Anonymous Authors}
+
+\newtheorem{proposition}{Proposition}
+\newcommand{\cg}{Contact Grammar}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Robot tool use is often represented as an affordance label, a task-conditioned grasp, a contact mode sequence, or a language-conditioned skill. These views hide a brittle assumption: that the order and role of contacts among hand, tool, target, and environment can be recovered later or treated as a low-level detail. We propose a different central mechanism, a \emph{contact grammar} whose production rules create, transform, and test typed contact-role predicates. A tool-use plan is a derivation; a failure is a falsified production precondition. We give a finite-state soundness statement for calibrated productions and a falsification protocol that weakens individual rules. In a controlled contact-world with held-out tool/task signatures, the grammar obtains test F1 1.000 while unordered contact sets obtain 0.706, static affordances 0.647, and flat task/tool memory 0.695. The evidence is deliberately scoped: it supports a representational and diagnostic claim, not real-robot deployment. The paper argues that contact-role productions are a sharper hypothesis class for robot tool use than static affordances or implicit contact mode search.
+\end{abstract}
+
+\section{Introduction}
+Tool use is a contact story. A robot does not merely choose a hammer, hook, wedge, brush, or rod; it grips one part, brings another part to a target from a particular side, sometimes braces on the environment, and then transmits force through a mechanically meaningful chain. Yet many interfaces flatten this story. Affordance methods often expose object regions or action labels \citep{gibson1979ecological,yamanobe2017affordance,ardon2021affordance}. Task-oriented grasping connects grasp and downstream action \citep{kokic2017affordance,fang2018tog}, but often leaves the full contact history implicit. Contact-rich planning has deep mechanics \citep{mason1986pushing,erdmann1988sensorless,lynch1996stable,graesdal2024convex}, while task-and-motion planning uses symbolic skeletons and continuous checks \citep{kaelbling2011tamp,toussaint2015logic,garrett2020pddlstream}. Robot foundation and language-conditioned systems scale action selection \citep{ahn2022saycan,brohan2022rt1,brohan2023rt2,liang2023code,huang2023voxposer}, but their plan interfaces can still skip physical contact preconditions.
+
+This paper studies a narrower hypothesis: for tool use, the reusable unit should be an ordered, typed contact production. The broken assumption is that contact role and contact order can be implicit. A hook touching the front of an object and a hook seated behind it have the same object pair but different mechanical meaning. A wedge under a lid without an environmental brace is not a pry. A flat edge touching debris after a bad grasp may be present but not force-transmitting. These are not just continuous-control details; they are symbolic distinctions about which physical relation currently exists.
+
+We propose \cg, a grammar over contact-role predicates. A production such as \textsc{SeatHookBehind} has typed preconditions over tool morphology, grasp state, side access, and target relation; its effect adds a contact predicate that later productions can consume. This makes every rule falsifiable: weakening the side gate or brace gate yields concrete false positives. The contribution is not a bigger policy, new data, active learning, an LLM planner, or a benchmark-only result. It is a mechanism: contact-role derivation as the representation for compositional robot tool use.
+
+\section{Prior Work and Novelty Boundary}
+Affordances originate as agent-environment action possibilities \citep{gibson1979ecological} and have become a central robotics representation for grasping and manipulation \citep{stoytchev2005tool,sinapov2007tool,yamanobe2017affordance,ardon2021affordance}. Tool-use work has learned behavior-grounded categories, task-oriented grasps, and even tool morphologies \citep{stoytchev2005tool,sinapov2007tool,fang2018tog,shao2020tools,qinsurvey2023,yang2024granularity}. These works make static object categories less plausible, but they still pressure our novelty: if an affordance relation already encodes action, object, and task, what is left? Our answer is that the proposed primitive is not a region, label, or relation instance; it is an executable production whose failure condition is part of the representation.
+
+Contact-rich manipulation and classical mechanics already model contact deeply \citep{mason1986pushing,erdmann1988sensorless,lynch1996stable}. Modern planners and relaxations reason through hybrid contact choices \citep{toussaint2015logic,graesdal2024convex}. We do not claim to replace them. \cg{} sits above continuous optimization as a compact language for role-typed contact traces, intended to prune impossible traces and diagnose why a symbolic tool-use plan is physically ill-posed.
+
+Language-conditioned systems and robot foundation models broaden task coverage \citep{ahn2022saycan,brohan2022rt1,brohan2023rt2,liang2023code,huang2023voxposer,wi2023calamari}. They make "use an LLM as planner" a weak contribution. Here language may name a goal, but the planner is a contact grammar, and a plan is rejected when a production precondition fails.
+
+\section{Contact Grammar}
+Let $H,T,O,E$ denote hand, tool, target object, and environment. A contact state is a finite set of typed predicates, for example
+\[
+  c = [\texttt{hand:tool\_handle}, \texttt{tool:target\_behind}, \texttt{tool:environment\_brace}].
+\]
+A production $p$ is a tuple $(\tau, P, A, D)$ with a type signature $\tau$, preconditions $P$ over morphology, geometry, and current contacts, additive effects $A$, and deleted or invalidated contacts $D$. A derivation applies productions while all preconditions hold. The rule names are intentionally mechanical: \textsc{GraspHandle}, \textsc{SeatHookBehind}, \textsc{InsertWedgeUnder}, \textsc{BraceOnRim}, \textsc{RotateAboutBrace}, \textsc{LayFlatEdgeFront}, and \textsc{PressWithoutSlip}.
+
+The design principle is that each production states what would falsify it. \textsc{SeatHookBehind} fails if the behind side is blocked and the tool lacks a narrow insertion geometry. \textsc{RotateAboutBrace} fails without a brace contact. \textsc{PressWithoutSlip} fails when the tool is too compliant for the target force. These failures are symbolic but mechanically typed; they can be passed to a continuous controller or used to request a different tool.
+
+\begin{proposition}[conditional finite-state trace soundness]
+Consider a finite deterministic contact transition system $\mathcal{T}$ and a finite grammar $G$. If every production in $G$ is calibrated so that its preconditions are true exactly when the corresponding transition in $\mathcal{T}$ is applicable, and its effects equal the transition's contact-state update, then bounded-depth derivation enumeration over $G$ is sound and complete for all traces of $\mathcal{T}$ that lie in the closure of $G$ up to that depth.
+\end{proposition}
+
+\noindent\textbf{Proof sketch.} Soundness follows by induction on derivation length: the base state is shared, and each applied production is, by calibration, an applicable transition with matching effect. Completeness follows by induction over any transition trace in the closure of $G$: each transition has a calibrated production with satisfied preconditions, so enumeration includes the next derivation step. The proposition is conditional. It audits rule claims; it does not prove that our hand-written rules cover real contact physics.
+
+\section{Falsification Protocol}
+For every production, we define counterfactual mutations: remove one precondition, swap a contact role, or replace an ordered contact with an unordered one. The prediction is not merely lower performance; it is a specific class of false positives. Removing the side gate from \textsc{SeatHookBehind} should accept blocked pull attempts. Removing the brace gate from \textsc{RotateAboutBrace} should accept impossible prying. Replacing ordered derivations with contact sets should accept tools that have the right parts but make contact in the wrong role.
+
+\section{Controlled Evidence}
+We evaluate in a finite contact world with six tool-use tasks: pulling an occluded object, sweeping debris, prying a lid, pressing a recessed button, dragging a distant ring, and tamping powder. Tools are procedural combinations of features such as hook, wedge, flat edge, flat end, narrow tip, long shaft, soft pad, length, and stiffness. The oracle checks morphology, side access, contact order, brace requirements, stiffness, and fragility. The train/test split withholds many task/tool signatures from a flat memory baseline.
+
+Baselines isolate assumptions rather than claim state-of-the-art status. \emph{Static affordance} checks whether the tool has the required functional feature. \emph{Unordered contacts} checks whether required contact labels exist while ignoring order and role. \emph{Flat pair memory} accepts only seen task/tool signatures. Two mutated grammars remove specific production gates.
+
+\begin{table}[t]
+\centering
+\caption{Finite contact-world test metrics. False positives are especially important: they are physically impossible plans accepted by the representation.}
+\label{tab:metrics}
+\input{../figures/eval_table.tex}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.86\linewidth]{../figures/eval_summary.pdf}
+\caption{Controlled contact-world results. Ordered production rules reduce false positives that arise when a method sees the right tool feature but ignores contact role, side, support, or order.}
+\label{fig:results}
+\end{figure}
+
+
+\section{Results}
+Table~\ref{tab:metrics} shows that \cg{} keeps the false positive rate near 0.000 in this controlled world, while unordered contacts have false positive rate 0.345 and static affordances 0.427. The difference is expected: the baselines know that a hook or wedge exists, but not whether the hook is seated behind the object or the wedge is braced. Flat pair memory has F1 0.695, showing the opposite weakness: it rejects many valid held-out compositions because it has no production-level reuse.
+
+The mutation tests are the most important evidence. When a side gate or brace gate is removed, the planner still looks grammar-like but begins accepting traces that violate the oracle. This is the desired scientific property: a production rule is an exposed hypothesis, not a hidden neuron or vague affordance.
+
+\section{Limitations}
+The evidence is not a real-robot experiment and not a high-fidelity simulator. The production library is hand-written. Perception of typed contacts is assumed. Continuous stability, friction cones, slip, deformation, tool breakage, and controller synthesis are only represented by coarse symbolic gates. Stronger evidence would connect productions to tactile/vision estimators and contact-implicit controllers, then test on real tools under adversarial side, support, and compliance changes.
+
+\section{Conclusion}
+Tool use should not be represented only as "object affords action." It is a compositional contact process. \cg{} makes this process explicit: plans are derivations over typed contacts, and failures are falsified production preconditions. The current paper offers a mechanism and a falsification protocol, with controlled evidence that the broken assumption matters. The next step is to learn or estimate these productions from real contact-rich robot experience.
+
+\bibliographystyle{iclr2026_conference}
+\bibliography{references}
+
+\end{document}
