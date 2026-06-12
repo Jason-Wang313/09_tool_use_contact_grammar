@@ -28,4 +28,8 @@ The orchestrated run copies the final paper to `C:/Users/wangz/Downloads/09.pdf`
 - `docs/hostile_prior_work.md`: 100-paper hostile prior set.
 - `experiments/contact_grammar_eval.py`: runnable finite contact-world experiment.
 - `data/aggregate_results.csv`: metrics.
+- `data/perception_noise_summary.csv`: v2 stress test that corrupts observed symbolic predicates before grammar planning.
 - `paper/main.tex`: anonymous ICLR-style manuscript.
+
+## Submission-Hardening v2
+The v2 pass adds a perception-noise audit because the original result assumes typed contact, morphology, and environment predicates are observed correctly. The clean grammar retains F1 1.000 in the controlled world. When the observed predicates are corrupted while oracle labels stay true, grammar F1 is 0.973 at 2% noise, 0.935 at 5%, 0.889 at 10%, and 0.778 at 20%. This supports the representational claim under reliable symbolic perception and explicitly rejects a deployment-readiness claim.

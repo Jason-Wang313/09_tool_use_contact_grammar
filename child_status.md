@@ -41,3 +41,26 @@ Failures and recovery:
 
 Next steps:
 - None for this child run.
+
+Exit code: 0
+End time: 2026-06-11 10:44:18 +01:00
+PDF exists: True
+
+## Submission-Hardening v2
+
+End time: 2026-06-12 21:58:54 +01:00
+Stage: terminal workshop-only / revise
+
+Added facts:
+- Added a perception-noise stress test that corrupts observed symbolic predicates before grammar planning while keeping oracle labels fixed.
+- Generated `data/perception_noise_results.csv`, `data/perception_noise_summary.csv`, and `figures/perception_noise_table.tex`.
+- Key stress result: grammar F1 1.000 clean, 0.973 at 2% noise, 0.935 at 5%, 0.889 at 10%, and 0.778 at 20%.
+- Updated manuscript abstract, results, limitations, and v2 marker.
+- Added submission attack/version/readiness/reproducibility/rigor docs.
+- Rebuilt `paper/main.pdf` with `pdflatex`, `bibtex`, `pdflatex`, `pdflatex`.
+- Copied canonical PDF to `C:/Users/wangz/Downloads/09.pdf` (157,061 bytes).
+- Removed tracked local `paper/main.pdf` after copying the canonical PDF.
+- No new Desktop PDF copy was created during v2 hardening.
+
+Latest terminal decision:
+- Workshop-only / revise. The representation is sharp and reproducible, but the evidence remains a finite symbolic world without real robot, learned perception, or high-fidelity contact physics.

@@ -15,9 +15,10 @@
 
 \begin{document}
 \maketitle
+\noindent\textbf{Submission-hardening v2, 2026-06-12.} Added a perception-noise stress test that corrupts the symbolic predicates observed by the grammar while scoring against the unchanged mechanical oracle.
 
 \begin{abstract}
-Robot tool use is often represented as an affordance label, a task-conditioned grasp, a contact mode sequence, or a language-conditioned skill. These views hide a brittle assumption: that the order and role of contacts among hand, tool, target, and environment can be recovered later or treated as a low-level detail. We propose a different central mechanism, a \emph{contact grammar} whose production rules create, transform, and test typed contact-role predicates. A tool-use plan is a derivation; a failure is a falsified production precondition. We give a finite-state soundness statement for calibrated productions and a falsification protocol that weakens individual rules. In a controlled contact-world with held-out tool/task signatures, the grammar obtains test F1 1.000 while unordered contact sets obtain 0.706, static affordances 0.647, and flat task/tool memory 0.695. The evidence is deliberately scoped: it supports a representational and diagnostic claim, not real-robot deployment. The paper argues that contact-role productions are a sharper hypothesis class for robot tool use than static affordances or implicit contact mode search.
+Robot tool use is often represented as an affordance label, a task-conditioned grasp, a contact mode sequence, or a language-conditioned skill. These views hide a brittle assumption: that the order and role of contacts among hand, tool, target, and environment can be recovered later or treated as a low-level detail. We propose a different central mechanism, a \emph{contact grammar} whose production rules create, transform, and test typed contact-role predicates. A tool-use plan is a derivation; a failure is a falsified production precondition. We give a finite-state soundness statement for calibrated productions and a falsification protocol that weakens individual rules. In a controlled contact-world with held-out tool/task signatures, the grammar obtains test F1 1.000 while unordered contact sets obtain 0.706, static affordances 0.647, and flat task/tool memory 0.695. A v2 perception-noise stress shows the boundary: corrupting observed symbolic predicates lowers grammar F1 from 1.000 clean to 0.889 at 10\% noise and 0.778 at 20\% noise. The evidence is deliberately scoped: it supports a representational and diagnostic claim under reliable typed perception, not real-robot deployment. The paper argues that contact-role productions are a sharper hypothesis class for robot tool use than static affordances or implicit contact mode search.
 \end{abstract}
 
 \section{Introduction}
@@ -57,11 +58,20 @@ We evaluate in a finite contact world with six tool-use tasks: pulling an occlud
 
 Baselines isolate assumptions rather than claim state-of-the-art status. \emph{Static affordance} checks whether the tool has the required functional feature. \emph{Unordered contacts} checks whether required contact labels exist while ignoring order and role. \emph{Flat pair memory} accepts only seen task/tool signatures. Two mutated grammars remove specific production gates.
 
+Because the grammar consumes symbolic contact and tool predicates, we also run a v2 perception-noise stress. For each test episode, the oracle label is computed from the true world state, but the grammar plans from a corrupted observation: feature predicates can be dropped or spuriously added, length and stiffness can be perturbed, and side access, brace availability, or target fragility can be flipped. This is not a perception model; it is an adversarial audit of how much the central result depends on reliable predicate estimation.
+
 \begin{table}[t]
 \centering
 \caption{Finite contact-world test metrics. False positives are especially important: they are physically impossible plans accepted by the representation.}
 \label{tab:metrics}
 \input{../figures/eval_table.tex}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Perception-noise stress over the grammar input predicates, averaged over five corruption seeds per level. The oracle label is unchanged; only the planner's observed symbolic state is corrupted.}
+\label{tab:perception-noise}
+\input{../figures/perception_noise_table.tex}
 \end{table}
 
 \begin{figure}[t]
@@ -77,8 +87,10 @@ Table~\ref{tab:metrics} shows that \cg{} keeps the false positive rate near 0.00
 
 The mutation tests are the most important evidence. When a side gate or brace gate is removed, the planner still looks grammar-like but begins accepting traces that violate the oracle. This is the desired scientific property: a production rule is an exposed hypothesis, not a hidden neuron or vague affordance.
 
+Table~\ref{tab:perception-noise} prevents overclaiming. With clean symbolic observations, the grammar exactly matches the finite oracle. With 2\% observed-predicate corruption it still has F1 0.973, but at 10\% noise F1 falls to 0.889, and at 20\% noise it falls to 0.778 with false negative rate 0.268. Most errors come from missing or perturbed predicates that cause the grammar to reject truly valid traces. The conclusion is therefore conditional on the availability of reliable typed contact, morphology, and environment predicates.
+
 \section{Limitations}
-The evidence is not a real-robot experiment and not a high-fidelity simulator. The production library is hand-written. Perception of typed contacts is assumed. Continuous stability, friction cones, slip, deformation, tool breakage, and controller synthesis are only represented by coarse symbolic gates. Stronger evidence would connect productions to tactile/vision estimators and contact-implicit controllers, then test on real tools under adversarial side, support, and compliance changes.
+The evidence is not a real-robot experiment and not a high-fidelity simulator. The production library is hand-written. Perception of typed contacts is assumed. The v2 stress test quantifies this weakness: modest predicate noise is tolerable in the toy world, but substantial noise quickly introduces false positives and especially false negatives. Continuous stability, friction cones, slip, deformation, tool breakage, and controller synthesis are only represented by coarse symbolic gates. Stronger evidence would connect productions to tactile/vision estimators and contact-implicit controllers, then test on real tools under adversarial side, support, and compliance changes.
 
 \section{Conclusion}
 Tool use should not be represented only as "object affords action." It is a compositional contact process. \cg{} makes this process explicit: plans are derivations over typed contacts, and failures are falsified production preconditions. The current paper offers a mechanism and a falsification protocol, with controlled evidence that the broken assumption matters. The next step is to learn or estimate these productions from real contact-rich robot experience.

@@ -341,6 +341,99 @@ def write_latex_table(aggregate_rows: List[Dict[str, object]]) -> None:
     (FIGURES / "eval_table.tex").write_text("\n".join(lines), encoding="utf-8")
 
 
+def corrupt_observation(ep: Episode, rng: random.Random, noise_rate: float) -> Episode:
+    """Return the planner's noisy symbolic observation while preserving the true episode."""
+    feats = set(ep.tool.features)
+    for feat in list(feats):
+        if rng.random() < noise_rate:
+            feats.remove(feat)
+    for feat in FEATURE_POOL:
+        if feat not in feats and rng.random() < noise_rate / 2:
+            feats.add(feat)
+
+    length = ep.tool.length
+    if rng.random() < noise_rate:
+        length = max(1, min(5, length + rng.choice([-1, 1])))
+
+    stiffness = ep.tool.stiffness
+    if rng.random() < noise_rate:
+        stiffness = max(1, min(5, stiffness + rng.choice([-1, 1])))
+
+    blocked_side = ep.blocked_side
+    if rng.random() < noise_rate:
+        blocked_side = rng.choice(["front", "behind", "under", "inside", "top", "none"])
+
+    brace_available = ep.brace_available
+    if rng.random() < noise_rate:
+        brace_available = not brace_available
+
+    fragile = ep.fragile
+    if rng.random() < noise_rate:
+        fragile = not fragile
+
+    noisy_tool = Tool(
+        name=ep.tool.name + "_observed",
+        features=tuple(sorted(feats)),
+        length=length,
+        stiffness=stiffness,
+        signature="+".join(sorted(feats)),
+    )
+    return Episode(
+        episode_id=ep.episode_id,
+        split=ep.split,
+        task=ep.task,
+        tool=noisy_tool,
+        blocked_side=blocked_side,
+        brace_available=brace_available,
+        fragile=fragile,
+        ood_signature=ep.ood_signature,
+    )
+
+
+def evaluate_perception_noise(episodes: Sequence[Episode], repeats: int = 5) -> Tuple[List[Dict[str, object]], List[Dict[str, object]]]:
+    test_episodes = [ep for ep in episodes if ep.split == "test"]
+    noise_levels = [0.0, 0.02, 0.05, 0.10, 0.20]
+    repeat_rows: List[Dict[str, object]] = []
+    summary_rows: List[Dict[str, object]] = []
+    for noise_rate in noise_levels:
+        for repeat in range(repeats):
+            rng = random.Random(9000 + repeat * 1009 + int(noise_rate * 10000))
+            eval_rows: List[Dict[str, object]] = []
+            for ep in test_episodes:
+                oracle, _ = mechanical_oracle(ep)
+                observed_ep = corrupt_observation(ep, rng, noise_rate)
+                prediction, _ = grammar_plan(observed_ep)
+                eval_rows.append({"oracle": oracle, "prediction": prediction})
+            m = metrics(eval_rows)
+            repeat_rows.append({"noise_rate": noise_rate, "repeat": repeat, **m})
+        rows_n = [r for r in repeat_rows if r["noise_rate"] == noise_rate]
+        summary: Dict[str, object] = {"noise_rate": noise_rate, "repeats": repeats}
+        for key in ["accuracy", "precision", "recall", "f1", "false_positive_rate", "false_negative_rate"]:
+            values = [float(r[key]) for r in rows_n]
+            summary[key] = sum(values) / len(values)
+            summary[key + "_min"] = min(values)
+            summary[key + "_max"] = max(values)
+        summary_rows.append(summary)
+    return repeat_rows, summary_rows
+
+
+def write_perception_noise_table(summary_rows: List[Dict[str, object]]) -> None:
+    lines = [
+        "\\begin{tabular}{lrrrr}",
+        "\\hline",
+        "Observed predicate noise & Acc. & F1 & FP rate & FN rate \\\\",
+        "\\hline",
+    ]
+    for r in summary_rows:
+        lines.append(
+            f"{float(r['noise_rate']) * 100:.0f}\\% & {float(r['accuracy']):.3f} & "
+            f"{float(r['f1']):.3f} & {float(r['false_positive_rate']):.3f} & "
+            f"{float(r['false_negative_rate']):.3f} \\\\"
+        )
+    lines.extend(["\\hline", "\\end{tabular}", ""])
+    (FIGURES / "perception_noise_table.tex").write_text("\n".join(lines), encoding="utf-8")
+
+
 def run() -> int:
     DATA.mkdir(exist_ok=True)
     FIGURES.mkdir(exist_ok=True)
@@ -406,11 +499,55 @@ def run() -> int:
     )
     maybe_plot(aggregate_rows)
     write_latex_table(aggregate_rows)
+    noise_repeat_rows, noise_summary_rows = evaluate_perception_noise(episodes)
+    write_csv(
+        DATA / "perception_noise_results.csv",
+        noise_repeat_rows,
+        [
+            "noise_rate",
+            "repeat",
+            "n",
+            "accuracy",
+            "precision",
+            "recall",
+            "f1",
+            "false_positive_rate",
+            "false_negative_rate",
+        ],
+    )
+    write_csv(
+        DATA / "perception_noise_summary.csv",
+        noise_summary_rows,
+        [
+            "noise_rate",
+            "repeats",
+            "accuracy",
+            "accuracy_min",
+            "accuracy_max",
+            "precision",
+            "precision_min",
+            "precision_max",
+            "recall",
+            "recall_min",
+            "recall_max",
+            "f1",
+            "f1_min",
+            "f1_max",
+            "false_positive_rate",
+            "false_positive_rate_min",
+            "false_positive_rate_max",
+            "false_negative_rate",
+            "false_negative_rate_min",
+            "false_negative_rate_max",
+        ],
+    )
+    write_perception_noise_table(noise_summary_rows)
     summary = {
         "episodes": len(episodes),
         "tools": len(tools),
         "train_signatures": len(seen),
         "test_all": [r for r in aggregate_rows if r["slice"] == "test_all"],
+        "perception_noise": noise_summary_rows,
     }
     (DATA / "experiment_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     log("SUMMARY " + json.dumps(summary["test_all"], sort_keys=True))
