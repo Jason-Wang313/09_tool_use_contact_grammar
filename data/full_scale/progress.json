@@ -1,0 +1,9 @@
+{
+  "counterexample_summary_rows": 20,
+  "granularity_summary_rows": 5,
+  "library_summary_rows": 6,
+  "main_summary_rows": 40,
+  "mutation_summary_rows": 10,
+  "noise_summary_rows": 72,
+  "stage": "complete"
+}
